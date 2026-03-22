@@ -1,0 +1,773 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>فدك اللوجستية — نظام إدارة الأسطول</title>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;900&family=Tajawal:wght@400;700;800;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  --navy:#0B1E3D;--teal:#0A7B6A;--teal2:#0D9E88;
+  --gold:#C8940F;--gold2:#E8AD18;--light:#F0F4FA;--border:#D4DDE9;
+  --text:#1A2B40;--muted:#6B7E9A;--green:#1A7A48;--red:#C0392B;
+  --amber:#B87008;--white:#fff;
+  --shadow:0 2px 14px rgba(11,30,61,.08);--shadow2:0 8px 28px rgba(11,30,61,.15);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Cairo',sans-serif;background:var(--light);color:var(--text);display:flex;min-height:100vh}
+.sidebar{width:220px;background:var(--navy);position:fixed;right:0;top:0;bottom:0;display:flex;flex-direction:column;z-index:100}
+.logo{padding:20px 16px 16px;border-bottom:1px solid rgba(255,255,255,.08)}
+.logo h1{font-family:'Tajawal';font-size:16px;font-weight:900;color:#fff;display:flex;align-items:center;gap:8px}
+.logo p{font-size:10px;color:rgba(255,255,255,.35);margin-top:2px}
+.logo .badge{background:var(--teal);color:#fff;font-size:9px;padding:2px 8px;border-radius:10px;margin-top:5px;display:inline-block}
+.nav{flex:1;padding:10px 0;overflow-y:auto}
+.nav-gr{font-size:9px;color:rgba(255,255,255,.28);padding:12px 16px 4px;letter-spacing:1.5px}
+.nav-item{display:flex;align-items:center;gap:9px;padding:9px 16px;font-size:13px;color:rgba(255,255,255,.58);cursor:pointer;transition:.18s;border-right:3px solid transparent}
+.nav-item:hover{background:rgba(255,255,255,.06);color:#fff}
+.nav-item.on{background:rgba(10,123,106,.22);color:#fff;border-right-color:var(--teal2)}
+.nav-item span.ic{font-size:15px;width:18px;text-align:center}
+.sid-foot{padding:14px 16px;border-top:1px solid rgba(255,255,255,.07);font-size:10px;color:rgba(255,255,255,.25)}
+.main{margin-right:220px;flex:1;display:flex;flex-direction:column;min-height:100vh}
+.topbar{background:var(--white);border-bottom:1px solid var(--border);height:56px;padding:0 24px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50;box-shadow:0 1px 5px rgba(11,30,61,.06)}
+.topbar h2{font-family:'Tajawal';font-size:16px;font-weight:800;color:var(--navy)}
+.content{padding:24px;flex:1}
+.pg{display:none;animation:fi .25s ease}
+.pg.on{display:block}
+@keyframes fi{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+.btn{padding:8px 16px;border-radius:8px;font-family:'Cairo';font-size:13px;font-weight:600;cursor:pointer;border:none;display:inline-flex;align-items:center;gap:6px;transition:.18s}
+.btn-p{background:var(--teal);color:#fff}.btn-p:hover{background:var(--teal2);transform:translateY(-1px);box-shadow:0 4px 12px rgba(10,123,106,.3)}
+.btn-o{background:transparent;color:var(--teal);border:1.5px solid var(--teal)}.btn-o:hover{background:var(--teal);color:#fff}
+.btn-g{background:var(--gold);color:#fff}.btn-g:hover{background:var(--gold2)}
+.btn-r{background:var(--red);color:#fff}.btn-r:hover{opacity:.85}
+.btn-sm{padding:5px 11px;font-size:12px}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:22px}
+.stat{background:var(--white);border-radius:12px;padding:18px;box-shadow:var(--shadow);border:1px solid var(--border);position:relative;overflow:hidden}
+.stat::after{content:'';position:absolute;top:0;right:0;width:4px;height:100%;border-radius:0 12px 12px 0}
+.stat.t::after{background:var(--teal)}.stat.g::after{background:var(--gold)}.stat.gr::after{background:var(--green)}.stat.r::after{background:var(--red)}
+.stat-l{font-size:11px;color:var(--muted);margin-bottom:4px}
+.stat-v{font-family:'Tajawal';font-size:24px;font-weight:900;color:var(--navy)}
+.stat-s{font-size:11px;color:var(--muted);margin-top:4px}
+.stat-ic{position:absolute;left:14px;top:50%;transform:translateY(-50%);font-size:30px;opacity:.07}
+.card{background:var(--white);border-radius:12px;padding:22px;box-shadow:var(--shadow);border:1px solid var(--border);margin-bottom:18px}
+.card-h{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.card-t{font-family:'Tajawal';font-size:15px;font-weight:800;color:var(--navy)}
+.card-s{font-size:11px;color:var(--muted);margin-top:2px}
+.fgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:18px}
+.fgrid2{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}
+.fg{display:flex;flex-direction:column;gap:5px}
+.fg label{font-size:11px;font-weight:700;color:var(--navy)}
+.fg input,.fg select{padding:8px 11px;border:1.5px solid var(--border);border-radius:8px;font-family:'Cairo';font-size:13px;color:var(--text);background:var(--white);transition:border-color .2s;text-align:right}
+.fg input:focus,.fg select:focus{outline:none;border-color:var(--teal);box-shadow:0 0 0 3px rgba(10,123,106,.1)}
+.fg input[readonly]{background:#f8f9fb;color:var(--muted)}
+.sec-l{font-size:10px;font-weight:700;color:var(--teal);letter-spacing:1.2px;margin-bottom:10px;display:flex;align-items:center;gap:8px}
+.sec-l::after{content:'';flex:1;height:1px;background:var(--border)}
+.tw{overflow-x:auto;border-radius:10px;border:1px solid var(--border)}
+table{width:100%;border-collapse:collapse;font-size:12.5px}
+thead th{background:var(--navy);color:#fff;padding:11px 13px;text-align:right;font-weight:600;white-space:nowrap;font-size:11.5px}
+tbody tr{border-bottom:1px solid var(--border);transition:background .12s}
+tbody tr:last-child{border-bottom:none}
+tbody tr:hover{background:#F0F6FF}
+tbody td{padding:10px 13px;white-space:nowrap}
+.tfoot td{background:var(--navy);color:#fff;font-weight:700;padding:11px 13px}
+.n{font-family:'Tajawal';font-weight:700}
+.pos{color:var(--green);font-weight:700}.neg{color:var(--red);font-weight:700}.amb{color:var(--amber);font-weight:700}
+.badge{display:inline-flex;align-items:center;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:600;gap:3px}
+.bg-n{background:#E4EBF5;color:var(--navy)}.bg-g{background:#E2F4EE;color:var(--green)}
+.bg-r{background:#FDECEA;color:var(--red)}.bg-a{background:#FEF2DF;color:var(--amber)}
+.bg-t{background:#E0F4F1;color:var(--teal)}
+.live-box{background:linear-gradient(135deg,#F0FAF8,#E8F6F3);border:1.5px solid var(--teal);border-radius:10px;padding:16px;display:grid;grid-template-columns:repeat(6,1fr);gap:12px;text-align:center;margin-top:14px}
+.live-v{font-family:'Tajawal';font-size:19px;font-weight:900;color:var(--navy)}
+.live-l{font-size:10px;color:var(--muted);margin-top:2px}
+.sal-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:20px}
+.sal-c{background:linear-gradient(135deg,var(--navy) 0%,#1C3560 100%);border-radius:14px;padding:24px;color:#fff;position:relative;overflow:hidden}
+.sal-c::before{content:'';position:absolute;width:150px;height:150px;border-radius:50%;background:rgba(10,123,106,.15);top:-50px;left:-50px}
+.sal-c.c2{background:linear-gradient(135deg,#1A3560,#0B2348)}
+.sal-c.c3{background:linear-gradient(135deg,#2A1806,#3E2408)}
+.sal-nm{font-family:'Tajawal';font-size:19px;font-weight:900;margin-bottom:4px}
+.sal-veh{font-size:11px;color:rgba(255,255,255,.5);margin-bottom:14px}
+.sal-row{display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid rgba(255,255,255,.08)}
+.sal-rl{font-size:12px;color:rgba(255,255,255,.65)}
+.sal-rv{font-family:'Tajawal';font-size:14px;font-weight:800}
+.sal-rv.p{color:#5DDBA8}.sal-rv.m{color:#FF7B7B}
+.sal-net{background:rgba(10,123,106,.28);border-radius:9px;padding:12px 14px;margin-top:14px;display:flex;justify-content:space-between;align-items:center}
+.sal-nl{font-size:13px;font-weight:700}
+.sal-nv{font-family:'Tajawal';font-size:22px;font-weight:900;color:var(--gold2)}
+.veh-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:20px}
+.veh-c{background:var(--white);border-radius:12px;padding:18px;border:1px solid var(--border);box-shadow:var(--shadow);transition:.2s}
+.veh-c:hover{transform:translateY(-2px);box-shadow:var(--shadow2);border-color:var(--teal)}
+.veh-plate{font-family:'Tajawal';font-size:22px;font-weight:900;color:var(--navy);letter-spacing:1px}
+.veh-drv{font-size:12px;color:var(--muted);margin-bottom:12px}
+.veh-stats{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.veh-st{background:var(--light);border-radius:8px;padding:8px;text-align:center}
+.veh-sv{font-family:'Tajawal';font-size:16px;font-weight:800;color:var(--navy)}
+.veh-sl{font-size:10px;color:var(--muted)}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--green);display:inline-block;margin-left:4px}
+.d-entry{display:flex;align-items:center;gap:10px;padding:11px 14px;background:var(--white);border:1px solid var(--border);border-radius:8px;margin-bottom:8px;transition:.2s}
+.d-entry:hover{border-color:var(--teal);background:#F5FDFB}
+.prog-wrap{background:var(--light);border-radius:20px;height:7px;overflow:hidden;margin-top:5px}
+.prog-bar{height:100%;border-radius:20px;transition:width .8s ease}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.three{display:grid;grid-template-columns:1fr 1fr 1fr;gap:18px}
+.chart-area{display:flex;align-items:flex-end;gap:5px;height:130px;padding-top:8px}
+.bar-w{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px}
+.bar-b{width:100%;border-radius:4px 4px 0 0;min-height:4px;transition:height .5s}
+.bar-lbl{font-size:9px;color:var(--muted)}
+.bar-v{font-size:9px;font-weight:700;color:var(--teal)}
+.spinner{display:flex;align-items:center;justify-content:center;padding:32px;color:var(--muted);font-size:13px;gap:8px}
+.spin{width:18px;height:18px;border:2px solid var(--border);border-top-color:var(--teal);border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.empty{text-align:center;padding:36px;color:var(--muted);font-size:13px}
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--navy);color:#fff;padding:11px 22px;border-radius:10px;font-size:13px;font-weight:600;box-shadow:var(--shadow2);transition:transform .3s;z-index:999;display:flex;align-items:center;gap:8px}
+.toast.show{transform:translateX(-50%) translateY(0)}
+.tdot{width:7px;height:7px;border-radius:50%;background:var(--teal2)}
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:200;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .2s}
+.modal-bg.open{opacity:1;pointer-events:all}
+.modal{background:var(--white);border-radius:14px;padding:28px;width:460px;max-width:95vw;transform:translateY(20px);transition:transform .25s;box-shadow:var(--shadow2)}
+.modal-bg.open .modal{transform:translateY(0)}
+.modal-h{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px}
+.modal-t{font-family:'Tajawal';font-size:17px;font-weight:800;color:var(--navy)}
+.modal-x{background:none;border:none;font-size:20px;cursor:pointer;color:var(--muted)}
+@media(max-width:860px){.sidebar{display:none}.main{margin-right:0}.stats{grid-template-columns:1fr 1fr}.veh-grid,.sal-cards,.two,.three{grid-template-columns:1fr}.fgrid{grid-template-columns:1fr 1fr}.live-box{grid-template-columns:repeat(3,1fr)}}
+</style>
+</head>
+<body>
+
+<aside class="sidebar">
+  <div class="logo">
+    <h1>🚛 فدك اللوجستية</h1>
+    <p>Fadak Logistics — Fleet System</p>
+    <span class="badge">Contract E2310</span>
+  </div>
+  <nav class="nav">
+    <div class="nav-gr">الرئيسية</div>
+    <div class="nav-item on" onclick="nav('dashboard',this)"><span class="ic">📊</span> لوحة التحكم</div>
+    <div class="nav-gr">إدارة البيانات</div>
+    <div class="nav-item" onclick="nav('trips',this)"><span class="ic">📦</span> إدخال الحمولات</div>
+    <div class="nav-item" onclick="nav('diesel',this)"><span class="ic">⛽</span> سجل الديزل</div>
+    <div class="nav-item" onclick="nav('vehicles',this)"><span class="ic">🚚</span> السيارات</div>
+    <div class="nav-gr">التقارير</div>
+    <div class="nav-item" onclick="nav('revenue',this)"><span class="ic">📋</span> تقرير الإيرادات</div>
+    <div class="nav-item" onclick="nav('salary',this)"><span class="ic">💰</span> كشف الرواتب</div>
+    <div class="nav-item" onclick="nav('bonus',this)"><span class="ic">🎯</span> تقرير البونس</div>
+  </nav>
+  <div class="sid-foot" style="display:flex;flex-direction:column;gap:8px">
+  <div style="display:flex;align-items:center;gap:6px">
+    <span style="font-size:13px">👤</span>
+    <span id="usernameEl" style="color:rgba(255,255,255,.5);font-size:11px">مدير النظام</span>
+  </div>
+  <a href="/logout" style="display:flex;align-items:center;gap:6px;color:rgba(255,100,100,.7);font-size:11px;text-decoration:none;padding:4px 0;transition:.2s" onmouseover="this.style.color='#ff6b6b'" onmouseout="this.style.color='rgba(255,100,100,.7)'">
+    🚪 تسجيل الخروج
+  </a>
+  <div style="color:rgba(255,255,255,.2);font-size:10px">ABU HAFIDH INT. LLC · 2026</div>
+</div>
+</aside>
+
+<div class="main">
+<header class="topbar">
+  <div style="display:flex;align-items:center;gap:10px">
+    <h2 id="pageTitle">لوحة التحكم</h2>
+    <span class="badge bg-t">01-03 إلى 18-03-2026</span>
+  </div>
+  <div style="display:flex;gap:10px;align-items:center">
+    <span id="topStat" style="font-size:12px;color:var(--muted)"></span>
+    <button class="btn btn-p btn-sm" onclick="nav('trips',null)">+ حمولة جديدة</button>
+  </div>
+</header>
+
+<div class="content">
+
+<!-- ═══ DASHBOARD ═══ -->
+<div class="pg on" id="pg-dashboard">
+  <div class="stats" id="dashStats"><div class="spinner"><div class="spin"></div>جاري التحميل...</div></div>
+  <div class="two">
+    <div class="card">
+      <div class="card-h"><div><div class="card-t">أداء السيارات</div><div class="card-s">مارس 2026</div></div></div>
+      <div id="fleetPerf"></div>
+    </div>
+    <div class="card">
+      <div class="card-h"><div class="card-t">الحمولات اليومية</div></div>
+      <div class="chart-area" id="dailyChart"></div>
+    </div>
+  </div>
+  <div class="two">
+    <div class="card">
+      <div class="card-h"><div class="card-t">قاعدة البونس</div></div>
+      <div id="bonusRulesEl"></div>
+    </div>
+    <div class="card">
+      <div class="card-h"><div class="card-t">ملخص الرواتب</div></div>
+      <div id="salSummary"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ TRIPS ═══ -->
+<div class="pg" id="pg-trips">
+  <div class="card">
+    <div class="card-h"><div><div class="card-t">➕ إدخال حمولة جديدة</div><div class="card-s">أدخل بيانات الفاتورة</div></div></div>
+    <div class="sec-l">بيانات السيارة</div>
+    <div class="fgrid">
+      <div class="fg"><label>السيارة</label><select id="f_veh" onchange="autoDriver()"><option value="">— اختر —</option></select></div>
+      <div class="fg"><label>السائق</label><input id="f_drv" readonly></div>
+      <div class="fg"><label>التاريخ</label><input type="date" id="f_date"></div>
+    </div>
+    <div class="sec-l">بيانات الفاتورة</div>
+    <div class="fgrid">
+      <div class="fg"><label>رقم الفاتورة</label><input id="f_inv" placeholder="مثال: 115365"></div>
+      <div class="fg"><label>المصدر</label>
+        <select id="f_src">
+          <option value="RADOA">ميزان RADOA (وزن جسر)</option>
+          <option value="DGAL">D'GAL L.L.C (إذن توصيل)</option>
+        </select>
+      </div>
+      <div class="fg"><label>المشروع</label><input value="Contract E2310" readonly></div>
+    </div>
+    <div class="sec-l">بيانات الوزن</div>
+    <div class="fgrid">
+      <div class="fg"><label>الوزن الإجمالي (كغ)</label><input type="number" id="f_gross" placeholder="113680" oninput="calcTrip()"></div>
+      <div class="fg"><label>وزن التار (كغ)</label><input type="number" id="f_tare" placeholder="26320" oninput="calcTrip()"></div>
+      <div class="fg"><label>الوزن الصافي — محسوب</label><input type="number" id="f_net" readonly style="font-weight:700;color:var(--teal)"></div>
+    </div>
+    <div class="sec-l">الديزل (اختياري)</div>
+    <div class="fgrid">
+      <div class="fg"><label>كمية الديزل (لتر)</label><input type="number" id="f_dlit" placeholder="300.09" step="0.01" oninput="calcDieselInTrip()"></div>
+      <div class="fg"><label>سعر الليتر (O.R)</label><input type="number" id="f_dprice" value="0.258" step="0.001" oninput="calcDieselInTrip()"></div>
+      <div class="fg"><label>تكلفة الديزل — محسوبة</label><input type="number" id="f_dcost" readonly style="font-weight:700;color:var(--amber)"></div>
+    </div>
+    <div id="liveCalc" style="display:none" class="live-box">
+      <div><div class="live-v" id="lc_t">—</div><div class="live-l">الأطنان</div></div>
+      <div><div class="live-v" style="color:var(--teal)">0.40</div><div class="live-l">سعر الطن</div></div>
+      <div><div class="live-v" id="lc_r" style="color:var(--teal)">—</div><div class="live-l">الإجمالي O.R</div></div>
+      <div><div class="live-v" id="lc_d" style="color:var(--amber)">—</div><div class="live-l">الديزل O.R</div></div>
+      <div><div class="live-v" id="lc_n" style="color:var(--green)">—</div><div class="live-l">الصافي O.R</div></div>
+      <div><div class="live-v" id="lc_b" style="color:var(--gold)">—</div><div class="live-l">بونس متوقع</div></div>
+    </div>
+    <div style="display:flex;gap:10px;margin-top:20px">
+      <button class="btn btn-p" onclick="saveTrip()">💾 حفظ الحمولة</button>
+      <button class="btn btn-o" onclick="clearTrip()">مسح</button>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-h"><div class="card-t">آخر الحمولات</div><button class="btn btn-o btn-sm" onclick="nav('revenue',null)">عرض الكل →</button></div>
+    <div class="tw"><table><thead><tr><th>التاريخ</th><th>فاتورة</th><th>السيارة</th><th>السائق</th><th>الأطنان</th><th>الإجمالي</th><th></th></tr></thead>
+    <tbody id="recentBody"><tr><td colspan="7" class="empty">جاري التحميل...</td></tr></tbody></table></div>
+  </div>
+</div>
+
+<!-- ═══ DIESEL ═══ -->
+<div class="pg" id="pg-diesel">
+  <div class="two">
+    <div class="card">
+      <div class="card-h"><div class="card-t">⛽ إضافة تعبئة ديزل</div></div>
+      <div style="display:flex;flex-direction:column;gap:13px">
+        <div class="fg"><label>السيارة</label><select id="d_veh"><option value="">— اختر —</option></select></div>
+        <div class="fg"><label>التاريخ</label><input type="date" id="d_date"></div>
+        <div class="fg"><label>الكمية (لتر)</label><input type="number" id="d_lit" placeholder="300.09" step="0.01" oninput="calcD()"></div>
+        <div class="fg"><label>سعر الليتر (O.R)</label><input type="number" id="d_price" value="0.258" step="0.001" oninput="calcD()"></div>
+        <div id="dCalc" style="display:none;background:linear-gradient(135deg,#FEF5E0,#FEF0CC);border:1.5px solid var(--gold);border-radius:10px;padding:14px;text-align:center">
+          <div style="font-size:11px;color:var(--muted)">التكلفة الإجمالية</div>
+          <div id="dRes" style="font-family:'Tajawal';font-size:28px;font-weight:900;color:var(--amber)"></div>
+        </div>
+        <button class="btn btn-p" onclick="saveDiesel()">💾 حفظ التعبئة</button>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-h"><div><div class="card-t">سجل التعبئات</div><div class="card-s" id="dTotLbl"></div></div></div>
+      <div id="dieselList"><div class="spinner"><div class="spin"></div></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ VEHICLES ═══ -->
+<div class="pg" id="pg-vehicles">
+  <div class="card" style="margin-bottom:18px">
+    <div class="card-h">
+      <div class="card-t">إضافة سيارة جديدة</div>
+      <button class="btn btn-o btn-sm" onclick="toggleVF()">+ إضافة</button>
+    </div>
+    <div id="vForm" style="display:none">
+      <div class="fgrid">
+        <div class="fg"><label>رقم السيارة</label><input id="v_plate" placeholder="مثال: 4455 AB"></div>
+        <div class="fg"><label>اسم السائق</label><input id="v_drv" placeholder="الاسم الكامل"></div>
+        <div class="fg"><label>وزن التار (كغ)</label><input type="number" id="v_tare" placeholder="26320"></div>
+      </div>
+      <div class="fgrid">
+        <div class="fg"><label>الراتب الأساسي (O.R)</label><input type="number" id="v_sal" value="250"></div>
+        <div class="fg"><label>علاوة السكن (O.R)</label><input type="number" id="v_hou" value="25"></div>
+        <div class="fg"><label>نوع الناقلة</label><input id="v_type" value="MAN"></div>
+      </div>
+      <button class="btn btn-p btn-sm" onclick="saveVehicle()">💾 حفظ السيارة</button>
+    </div>
+  </div>
+  <div class="veh-grid" id="vehCards"><div class="spinner"><div class="spin"></div></div></div>
+  <div class="card">
+    <div class="card-h"><div class="card-t">مقارنة الأداء</div></div>
+    <div class="tw"><table><thead><tr><th>السيارة</th><th>السائق</th><th>الحمولات</th><th>أيام العمل</th><th>الإيرادات</th><th>الديزل</th><th>الصافي</th></tr></thead>
+    <tbody id="vehTBody"></tbody><tfoot><tr id="vehTFoot"></tr></tfoot></table></div>
+  </div>
+</div>
+
+<!-- ═══ REVENUE ═══ -->
+<div class="pg" id="pg-revenue">
+  <div class="card" style="margin-bottom:14px">
+    <div style="display:flex;align-items:flex-end;gap:12px;flex-wrap:wrap">
+      <div class="fg" style="min-width:130px"><label>السيارة</label>
+        <select id="r_veh" onchange="loadRevenue()"><option value="">الكل</option></select>
+      </div>
+      <div class="fg" style="min-width:130px"><label>التاريخ</label>
+        <select id="r_date" onchange="loadRevenue()"><option value="">كل التواريخ</option></select>
+      </div>
+      <div style="display:flex;gap:8px;padding-bottom:2px" id="revBadges"></div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-h"><div class="card-t">تقرير الإيرادات</div></div>
+    <div class="tw"><table><thead><tr><th>#</th><th>التاريخ</th><th>فاتورة</th><th>السيارة</th><th>السائق</th><th>الأطنان</th><th>سعر الطن</th><th>الإجمالي</th><th></th></tr></thead>
+    <tbody id="revBody"><tr><td colspan="9" class="spinner"><div class="spin"></div></td></tr></tbody>
+    <tfoot><tr id="revFoot"></tr></tfoot></table></div>
+  </div>
+</div>
+
+<!-- ═══ SALARY ═══ -->
+<div class="pg" id="pg-salary">
+  <div class="sal-cards" id="salCards"><div class="spinner"><div class="spin"></div></div></div>
+  <div class="card">
+    <div class="card-h"><div class="card-t">جدول الرواتب</div><button class="btn btn-g btn-sm" onclick="printPage()">🖨 طباعة</button></div>
+    <div class="tw"><table><thead><tr><th>السائق</th><th>السيارة</th><th>الحمولات</th><th>الأساسي</th><th>السكن</th><th>البونس</th><th>الخصومات</th><th>الصافي</th></tr></thead>
+    <tbody id="salBody"></tbody><tfoot><tr id="salFoot"></tr></tfoot></table></div>
+  </div>
+</div>
+
+<!-- ═══ BONUS ═══ -->
+<div class="pg" id="pg-bonus">
+  <div class="card" style="margin-bottom:16px">
+    <div class="card-h"><div class="card-t">قاعدة حساب البونس</div></div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap">
+      <div style="background:#FEF5E0;padding:12px 20px;border-radius:10px;text-align:center;flex:1"><div style="font-size:12px;font-weight:700">الحمولة الأولى</div><div style="font-family:'Tajawal';font-size:20px;font-weight:900;color:var(--muted)">0 ر.ع</div></div>
+      <div style="background:#E2F5EE;padding:12px 20px;border-radius:10px;text-align:center;flex:1"><div style="font-size:12px;font-weight:700">الحمولات 2-5</div><div style="font-family:'Tajawal';font-size:20px;font-weight:900;color:var(--green)">2 ر.ع</div></div>
+      <div style="background:#E8F0FF;padding:12px 20px;border-radius:10px;text-align:center;flex:1"><div style="font-size:12px;font-weight:700">الحمولة 6</div><div style="font-family:'Tajawal';font-size:20px;font-weight:900;color:var(--teal)">4 ر.ع</div></div>
+      <div style="background:#EFE8FF;padding:12px 20px;border-radius:10px;text-align:center;flex:1"><div style="font-size:12px;font-weight:700">الحمولة 7</div><div style="font-family:'Tajawal';font-size:20px;font-weight:900;color:var(--navy)">5 ر.ع</div></div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-h"><div class="card-t">تقرير البونس اليومي</div></div>
+    <div class="tw"><table><thead><tr><th>السيارة</th><th>التاريخ</th><th>الحمولات</th><th>ح1</th><th>ح2-5</th><th>ح6</th><th>ح7</th><th>البونس</th></tr></thead>
+    <tbody id="bonusBody"></tbody><tfoot><tr id="bonusFoot"></tr></tfoot></table></div>
+  </div>
+</div>
+
+</div><!-- /content -->
+</div><!-- /main -->
+
+<div class="modal-bg" id="modalBg">
+  <div class="modal">
+    <div class="modal-h"><span class="modal-t" id="modalTitle">تعديل</span><button class="modal-x" onclick="closeModal()">✕</button></div>
+    <div id="modalBody"></div>
+  </div>
+</div>
+
+<div class="toast" id="toastEl"><span class="tdot"></span><span id="toastMsg"></span></div>
+
+<script>
+const API = '';  // same origin
+const TITLES = {dashboard:'لوحة التحكم',trips:'إدخال الحمولات',diesel:'سجل الديزل',
+  vehicles:'السيارات',revenue:'تقرير الإيرادات',salary:'كشف الرواتب',bonus:'تقرير البونس'};
+
+let VEHICLES = [];
+let _tripVehicles = [];
+
+// ── Helpers ─────────────────────────────────────────────
+function fmt(n,d=2){return (+n||0).toLocaleString('en-US',{minimumFractionDigits:d,maximumFractionDigits:d})}
+function calcBonus(n){let b=0;for(let i=2;i<=n;i++) b+=i<=5?2:i===6?4:i===7?5:0;return b}
+async function api(path,method='GET',body=null){
+  // handle session expiry
+  const opts={method,headers:{'Content-Type':'application/json'}};
+  if(body) opts.body=JSON.stringify(body);
+  const r=await fetch(API+'/api'+path,opts);
+  if(r.status===401){window.location.href='/login';return {};}
+  return r.json();
+}
+function toast(msg){
+  const el=document.getElementById('toastEl');
+  document.getElementById('toastMsg').textContent=msg;
+  el.classList.add('show'); setTimeout(()=>el.classList.remove('show'),3200);
+}
+function closeModal(){document.getElementById('modalBg').classList.remove('open')}
+function printPage(){window.print()}
+
+// ── Navigation ───────────────────────────────────────────
+function nav(id,el){
+  document.querySelectorAll('.pg').forEach(p=>p.classList.remove('on'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('on'));
+  document.getElementById('pg-'+id).classList.add('on');
+  document.getElementById('pageTitle').textContent=TITLES[id];
+  if(el) el.classList.add('on');
+  else document.querySelectorAll('.nav-item').forEach(n=>{if(n.getAttribute('onclick')?.includes("'"+id+"'")) n.classList.add('on')});
+  loadPage(id);
+}
+
+async function loadPage(id){
+  if(id==='dashboard') await loadDashboard();
+  else if(id==='trips'){await loadVehicleSelects();loadRecent();}
+  else if(id==='diesel'){await loadVehicleSelects('d_veh');loadDiesel();}
+  else if(id==='vehicles') loadVehicles();
+  else if(id==='revenue'){await loadVehicleSelects('r_veh');loadRevenue();}
+  else if(id==='salary') loadSalary();
+  else if(id==='bonus') loadBonus();
+}
+
+// ── Dashboard ────────────────────────────────────────────
+async function loadDashboard(){
+  const [stats,vehicles,salary] = await Promise.all([
+    api('/stats'), api('/vehicles'), api('/salary')
+  ]);
+  VEHICLES = vehicles;
+
+  // Stats cards
+  document.getElementById('dashStats').innerHTML=`
+    <div class="stat t"><div class="stat-l">إجمالي الإيرادات</div><div class="stat-v">${fmt(stats.total_revenue)} <span style="font-size:13px">O.R</span></div><div class="stat-s">${vehicles.length} سيارات نشطة</div><div class="stat-ic">💵</div></div>
+    <div class="stat g"><div class="stat-l">إجمالي الحمولات</div><div class="stat-v">${stats.total_trips}</div><div class="stat-s">رحلة هذا الشهر</div><div class="stat-ic">📦</div></div>
+    <div class="stat gr"><div class="stat-l">صافي الإيرادات</div><div class="stat-v">${fmt(stats.net_revenue)} <span style="font-size:13px">O.R</span></div><div class="stat-s">بعد خصم الديزل</div><div class="stat-ic">✅</div></div>
+    <div class="stat r"><div class="stat-l">إجمالي الديزل</div><div class="stat-v">${fmt(stats.total_diesel)} <span style="font-size:13px">O.R</span></div><div class="stat-s">مدفوع مسبقاً</div><div class="stat-ic">⛽</div></div>`;
+
+  // Top stat
+  document.getElementById('topStat').textContent=`${stats.total_trips} رحلة · ${fmt(stats.net_revenue)} O.R صافي`;
+
+  // Fleet performance
+  const maxR=Math.max(...vehicles.map(v=>v.revenue));
+  const colors=['linear-gradient(90deg,#0A7B6A,#0D9E88)','linear-gradient(90deg,#1A5F9A,#2880CC)','linear-gradient(90deg,#7A3A06,#A05010)'];
+  document.getElementById('fleetPerf').innerHTML=vehicles.map((v,i)=>{
+    const pct=maxR>0?Math.round(v.revenue/maxR*100):0;
+    return `<div style="margin-bottom:14px">
+      <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+        <span style="font-size:13px;font-weight:600">${v.plate} — ${v.driver}</span>
+        <span style="font-family:'Tajawal';font-weight:800;color:var(--teal)">${fmt(v.revenue)} O.R</span>
+      </div>
+      <div class="prog-wrap"><div class="prog-bar" style="width:${pct}%;background:${colors[i%3]}"></div></div>
+      <div style="font-size:11px;color:var(--muted);margin-top:3px">${v.trip_count} حمولة · صافي ${fmt(v.net_revenue)} O.R</div>
+    </div>`;
+  }).join('');
+
+  // Daily chart
+  const byDate={};
+  stats.daily.forEach(d=>{byDate[d.date]=(byDate[d.date]||0)+d.trips});
+  const dates=Object.keys(byDate).sort();
+  const maxV=Math.max(1,...Object.values(byDate));
+  document.getElementById('dailyChart').innerHTML=dates.map(d=>{
+    const v=byDate[d]; const h=Math.round(v/maxV*100);
+    const col=v>=10?'var(--teal)':v>=6?'#2880CC':'#B0BEC5';
+    return `<div class="bar-w"><div class="bar-v">${v}</div>
+      <div class="bar-b" style="height:${h}%;background:${col}"></div>
+      <div class="bar-lbl">${d.slice(8)}-${d.slice(5,7)}</div></div>`;
+  }).join('');
+
+  // Bonus rules
+  document.getElementById('bonusRulesEl').innerHTML=[
+    ['الحمولة الأولى','0 ر.ع','#FEF5E0','var(--muted)'],
+    ['الحمولات 2-5','2 ر.ع / حمولة','#E2F5EE','var(--green)'],
+    ['الحمولة 6','4 ر.ع','#E8F0FF','var(--teal)'],
+    ['الحمولة 7','5 ر.ع','#EFE8FF','var(--navy)'],
+  ].map(([l,v,bg,c])=>`<div style="display:flex;justify-content:space-between;padding:10px 14px;border-radius:8px;margin-bottom:8px;background:${bg}">
+    <span style="font-size:13px;font-weight:600">${l}</span>
+    <span style="font-family:'Tajawal';font-size:15px;font-weight:800;color:${c}">${v}</span>
+  </div>`).join('');
+
+  // Salary summary
+  document.getElementById('salSummary').innerHTML=salary.map(s=>`
+    <div style="display:flex;justify-content:space-between;padding:10px 14px;background:var(--light);border-radius:8px;margin-bottom:10px;align-items:center">
+      <div>
+        <div style="font-size:13px;font-weight:700">${s.vehicle.driver}</div>
+        <div style="font-size:11px;color:var(--muted)">${s.vehicle.plate} · ${s.trip_count} حمولة · بونس ${s.bonus} ر.ع</div>
+      </div>
+      <span style="font-family:'Tajawal';font-size:19px;font-weight:900;color:var(--green)">${fmt(s.net_salary,0)} ر.ع</span>
+    </div>`).join('');
+}
+
+// ── Vehicles selects ─────────────────────────────────────
+async function loadVehicleSelects(elId='f_veh'){
+  if(!VEHICLES.length) VEHICLES = await api('/vehicles');
+  const opts='<option value="">— اختر —</option>'+VEHICLES.map(v=>`<option value="${v.id}">${v.plate} — ${v.driver}</option>`).join('');
+  document.querySelectorAll('#f_veh,#d_veh,#r_veh').forEach(el=>{if(el) el.innerHTML=el.id==='r_veh'?'<option value="">الكل</option>'+VEHICLES.map(v=>`<option value="${v.id}">${v.plate}</option>`).join(''):opts});
+}
+
+// ── Trips ────────────────────────────────────────────────
+function autoDriver(){
+  const v=VEHICLES.find(x=>x.id===document.getElementById('f_veh').value);
+  document.getElementById('f_drv').value=v?v.driver:'';
+  if(v) document.getElementById('f_tare').value=v.tare;
+  updateLive();
+}
+
+function calcTrip(){
+  const g=+document.getElementById('f_gross').value||0;
+  const t=+document.getElementById('f_tare').value||0;
+  if(g>0&&t>0&&g>t) document.getElementById('f_net').value=g-t;
+  updateLive();
+}
+
+function calcDieselInTrip(){
+  const l=+document.getElementById('f_dlit').value||0;
+  const p=+document.getElementById('f_dprice').value||0.258;
+  document.getElementById('f_dcost').value=l>0?+(l*p).toFixed(3):'';
+  updateLive();
+}
+
+function updateLive(){
+  const net=+document.getElementById('f_net').value||0;
+  if(!net){document.getElementById('liveCalc').style.display='none';return;}
+  const tons=(net/1000).toFixed(2);
+  const rev=+(tons*0.40).toFixed(2);
+  const dc=+document.getElementById('f_dcost').value||0;
+  const netV=(rev-dc).toFixed(2);
+  const vid=document.getElementById('f_veh').value;
+  const date=document.getElementById('f_date').value;
+  // estimate bonus for next trip on this day
+  const dayTrips=_tripVehicles.filter(t=>t.vehicle_id===vid&&t.date===date).length;
+  const bonusAdd=calcBonus(dayTrips+1)-calcBonus(dayTrips);
+  document.getElementById('lc_t').textContent=tons+' طن';
+  document.getElementById('lc_r').textContent=rev+' O.R';
+  document.getElementById('lc_d').textContent=dc>0?'-'+dc:' — ';
+  document.getElementById('lc_n').textContent=netV+' O.R';
+  document.getElementById('lc_b').textContent=(bonusAdd?'+'+bonusAdd:'0')+' ر.ع';
+  document.getElementById('liveCalc').style.display='grid';
+}
+
+async function saveTrip(){
+  const vid=document.getElementById('f_veh').value;
+  const date=document.getElementById('f_date').value;
+  const inv=document.getElementById('f_inv').value.trim();
+  const net=+document.getElementById('f_net').value;
+  if(!vid||!date||!inv||!net){toast('⚠️ يرجاء ملء الحقول المطلوبة');return;}
+  const tons=+(net/1000).toFixed(2);
+  const dlit=+document.getElementById('f_dlit').value||0;
+  const dprice=+document.getElementById('f_dprice').value||0.258;
+  const r=await api('/trips','POST',{vehicle_id:vid,date,invoice:inv,tons,source:document.getElementById('f_src').value,
+    diesel_liters:dlit||null,diesel_price:dprice});
+  if(r.ok){
+    toast('✅ تم حفظ الحمولة — '+tons+' طن · '+r.total+' O.R'+(dlit?' | ⛽ '+dlit+' لتر':''));
+    clearTrip(); loadRecent();
+  }
+}
+
+function clearTrip(){
+  ['f_veh','f_inv','f_gross','f_tare','f_net','f_dlit','f_dcost'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el.tagName==='SELECT') el.value=''; else el.value='';
+  });
+  document.getElementById('f_drv').value='';
+  document.getElementById('f_dprice').value='0.258';
+  document.getElementById('liveCalc').style.display='none';
+}
+
+async function loadRecent(){
+  const trips=await api('/trips');
+  _tripVehicles=trips;
+  const recent=trips.slice(-15).reverse();
+  document.getElementById('recentBody').innerHTML=recent.length?
+    recent.map(t=>`<tr>
+      <td>${t.date}</td><td>${t.invoice}</td>
+      <td><span class="badge bg-n">${t.plate}</span></td>
+      <td>${t.driver}</td>
+      <td class="n">${fmt(t.tons)}</td>
+      <td class="n pos">${fmt(t.total)}</td>
+      <td><button class="btn btn-r btn-sm" onclick="deleteTrip('${t.id}')">🗑</button></td>
+    </tr>`).join('')
+    :'<tr><td colspan="7" class="empty">لا توجد حمولات</td></tr>';
+}
+
+async function deleteTrip(id){
+  if(!confirm('حذف هذه الحمولة؟')) return;
+  await api('/trips/'+id,'DELETE');
+  toast('🗑 تم الحذف'); loadRecent();
+}
+
+// ── Diesel ───────────────────────────────────────────────
+function calcD(){
+  const l=+document.getElementById('d_lit').value||0;
+  const p=+document.getElementById('d_price').value||0.258;
+  if(l>0){document.getElementById('dRes').textContent=(l*p).toFixed(3)+' O.R';document.getElementById('dCalc').style.display='block';}
+}
+
+async function saveDiesel(){
+  const vid=document.getElementById('d_veh').value;
+  const date=document.getElementById('d_date').value;
+  const liters=+document.getElementById('d_lit').value;
+  const price=+document.getElementById('d_price').value||0.258;
+  if(!vid||!liters){toast('⚠️ اختر السيارة وأدخل الكمية');return;}
+  const r=await api('/diesel','POST',{vehicle_id:vid,date,liters,price_per_liter:price});
+  if(r.ok){document.getElementById('d_lit').value='';document.getElementById('dCalc').style.display='none';toast('⛽ تم حفظ التعبئة — '+liters+' لتر · '+r.cost+' O.R');loadDiesel();}
+}
+
+async function deleteDiesel(id){
+  await api('/diesel/'+id,'DELETE');
+  toast('🗑 تم الحذف'); loadDiesel();
+}
+
+async function loadDiesel(){
+  const diesel=await api('/diesel');
+  const totL=diesel.reduce((s,d)=>s+d.liters,0);
+  const totC=diesel.reduce((s,d)=>s+d.cost,0);
+  document.getElementById('dTotLbl').textContent=`${fmt(totL)} لتر · ${fmt(totC,3)} O.R`;
+  document.getElementById('dieselList').innerHTML=diesel.length?
+    diesel.map(d=>`<div class="d-entry">
+      <span style="font-size:12px;font-weight:700;color:var(--navy);min-width:90px">${d.date}</span>
+      <span style="font-family:'Tajawal';font-size:15px;font-weight:800;color:var(--teal);min-width:80px">${fmt(d.liters)} L</span>
+      <span style="font-family:'Tajawal';font-size:14px;font-weight:800;color:var(--amber);flex:1">${fmt(d.cost,3)} O.R</span>
+      <span class="badge bg-n">${d.plate}</span>
+      <button style="background:none;border:none;cursor:pointer;color:var(--red);font-size:14px;opacity:.5;transition:.2s" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=.5" onclick="deleteDiesel('${d.id}')">🗑</button>
+    </div>`).join('')
+    :'<div class="empty">لا توجد تعبئات</div>';
+}
+
+// ── Vehicles ─────────────────────────────────────────────
+async function loadVehicles(){
+  const vehicles=await api('/vehicles');
+  VEHICLES=vehicles;
+  document.getElementById('vehCards').innerHTML=vehicles.map((v,i)=>`
+    <div class="veh-c">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px">
+        <div class="veh-plate">${v.plate}</div>
+        <button class="btn btn-o btn-sm" onclick="editVehicle('${v.id}')">تعديل</button>
+      </div>
+      <div class="veh-drv"><span class="dot"></span>${v.driver} · ${v.type}</div>
+      <div class="veh-stats">
+        <div class="veh-st"><div class="veh-sv">${v.trip_count}</div><div class="veh-sl">رحلة</div></div>
+        <div class="veh-st"><div class="veh-sv">${fmt(v.revenue,0)}</div><div class="veh-sl">O.R إيرادات</div></div>
+        <div class="veh-st"><div class="veh-sv">${fmt(v.diesel_cost,0)}</div><div class="veh-sl">O.R ديزل</div></div>
+        <div class="veh-st"><div class="veh-sv" style="color:var(--green)">${fmt(v.net_revenue,0)}</div><div class="veh-sl">O.R صافي</div></div>
+      </div>
+    </div>`).join('');
+  let totR=0,totD=0,totT=0;
+  document.getElementById('vehTBody').innerHTML=vehicles.map(v=>{
+    totR+=v.revenue; totD+=v.diesel_cost; totT+=v.trip_count;
+    return `<tr><td><span class="badge bg-n">${v.plate}</span></td><td>${v.driver}</td>
+      <td class="n">${v.trip_count}</td><td class="n pos">${fmt(v.revenue)}</td>
+      <td class="n neg">${fmt(v.diesel_cost,3)}</td><td class="n pos">${fmt(v.net_revenue)}</td></tr>`;
+  }).join('');
+  document.getElementById('vehTFoot').innerHTML=`<td colspan="2">الإجمالي</td><td>${totT}</td><td>${fmt(totR)}</td><td>${fmt(totD,3)}</td><td>${fmt(totR-totD)}</td>`;
+}
+
+function toggleVF(){const el=document.getElementById('vForm');el.style.display=el.style.display==='none'?'block':'none'}
+
+async function saveVehicle(){
+  const plate=document.getElementById('v_plate').value.trim();
+  const driver=document.getElementById('v_drv').value.trim();
+  if(!plate||!driver){toast('⚠️ أدخل رقم السيارة واسم السائق');return;}
+  const r=await api('/vehicles','POST',{
+    plate,driver,tare:+document.getElementById('v_tare').value||26320,
+    salary:+document.getElementById('v_sal').value||250,
+    housing:+document.getElementById('v_hou').value||25,
+    type:document.getElementById('v_type').value||'MAN'
+  });
+  if(r.ok){toast('🚛 تم إضافة '+plate);loadVehicles();}
+}
+
+async function editVehicle(id){
+  const v=VEHICLES.find(x=>x.id===id);
+  document.getElementById('modalTitle').textContent='تعديل — '+v.plate;
+  document.getElementById('modalBody').innerHTML=`
+    <div class="fgrid2" style="margin-bottom:16px">
+      <div class="fg"><label>اسم السائق</label><input id="m_drv" value="${v.driver}"></div>
+      <div class="fg"><label>الراتب الأساسي</label><input type="number" id="m_sal" value="${v.salary}"></div>
+      <div class="fg"><label>علاوة السكن</label><input type="number" id="m_hou" value="${v.housing}"></div>
+      <div class="fg"><label>وزن التار (كغ)</label><input type="number" id="m_tare" value="${v.tare}"></div>
+    </div>
+    <div style="display:flex;gap:10px">
+      <button class="btn btn-p" onclick="applyEdit('${id}')">💾 حفظ</button>
+      <button class="btn btn-o" onclick="closeModal()">إلغاء</button>
+    </div>`;
+  document.getElementById('modalBg').classList.add('open');
+}
+
+async function applyEdit(id){
+  const r=await api('/vehicles/'+id,'PUT',{
+    driver:document.getElementById('m_drv').value,
+    salary:+document.getElementById('m_sal').value,
+    housing:+document.getElementById('m_hou').value,
+    tare:+document.getElementById('m_tare').value,type:'MAN'
+  });
+  if(r.ok){closeModal();toast('✅ تم التحديث');loadVehicles();}
+}
+
+// ── Revenue ──────────────────────────────────────────────
+async function loadRevenue(){
+  const vid=document.getElementById('r_veh')?.value||'';
+  const date=document.getElementById('r_date')?.value||'';
+  const trips=await api('/trips?'+(vid?'vehicle_id='+vid:'')+(date?'&date='+date:''));
+  const totT=trips.reduce((s,t)=>s+t.tons,0);
+  const totR=trips.reduce((s,t)=>s+t.total,0);
+  document.getElementById('revBadges').innerHTML=`
+    <span class="badge bg-n">${trips.length} رحلة</span>
+    <span class="badge bg-g">${fmt(totR)} O.R</span>
+    <span class="badge bg-t">${fmt(totT)} طن</span>`;
+  // Populate date filter
+  const dates=[...new Set(trips.map(t=>t.date))].sort();
+  const dateEl=document.getElementById('r_date');
+  const cur=dateEl.value;
+  dateEl.innerHTML='<option value="">كل التواريخ</option>'+dates.map(d=>`<option value="${d}">${d}</option>`).join('');
+  if(cur) dateEl.value=cur;
+  document.getElementById('revBody').innerHTML=trips.map((t,i)=>`<tr>
+    <td>${i+1}</td><td>${t.date}</td><td>${t.invoice}</td>
+    <td><span class="badge bg-n">${t.plate}</span></td><td>${t.driver}</td>
+    <td class="n">${fmt(t.tons)}</td><td class="n">0.400</td>
+    <td class="n pos">${fmt(t.total)}</td>
+    <td><button class="btn btn-r btn-sm" onclick="deleteTrip('${t.id}');loadRevenue()">🗑</button></td>
+  </tr>`).join('')||'<tr><td colspan="9" class="empty">لا توجد بيانات</td></tr>';
+  document.getElementById('revFoot').innerHTML=`<td colspan="5">الإجمالي (${trips.length})</td><td>${fmt(totT)} طن</td><td>0.400</td><td>${fmt(totR)}</td><td></td>`;
+}
+
+// ── Salary ───────────────────────────────────────────────
+async function loadSalary(){
+  const salary=await api('/salary');
+  const cls=['','c2','c3'];
+  document.getElementById('salCards').innerHTML=salary.map((s,i)=>`
+    <div class="sal-c ${cls[i%3]}">
+      <div class="sal-nm">${s.vehicle.driver}</div>
+      <div class="sal-veh">🚛 ${s.vehicle.plate} · ${s.trip_count} حمولة · ${s.work_days} يوم</div>
+      <div class="sal-row"><span class="sal-rl">الراتب الأساسي</span><span class="sal-rv p">${fmt(s.vehicle.salary)} O.R</span></div>
+      <div class="sal-row"><span class="sal-rl">علاوة السكن</span><span class="sal-rv p">${fmt(s.vehicle.housing)} O.R</span></div>
+      <div class="sal-row"><span class="sal-rl">بونس الأداء</span><span class="sal-rv p">${fmt(s.bonus)} O.R</span></div>
+      <div class="sal-row"><span class="sal-rl">الخصومات</span><span class="sal-rv m">0.00 O.R</span></div>
+      <div class="sal-net"><span class="sal-nl">صافي الراتب</span><span class="sal-nv">${fmt(s.net_salary)} O.R</span></div>
+    </div>`).join('');
+  let ts=0,th=0,tb=0,tn=0;
+  document.getElementById('salBody').innerHTML=salary.map(s=>{
+    ts+=s.vehicle.salary;th+=s.vehicle.housing;tb+=s.bonus;tn+=s.net_salary;
+    return `<tr><td>${s.vehicle.driver}</td><td><span class="badge bg-n">${s.vehicle.plate}</span></td>
+      <td class="n">${s.trip_count}</td><td class="n">${fmt(s.vehicle.salary)}</td>
+      <td class="n">${fmt(s.vehicle.housing)}</td><td class="n pos">${fmt(s.bonus)}</td>
+      <td class="n">0.00</td><td class="n pos">${fmt(s.net_salary)}</td></tr>`;
+  }).join('');
+  document.getElementById('salFoot').innerHTML=`<td colspan="3">الإجمالي</td><td>${fmt(ts)}</td><td>${fmt(th)}</td><td>${fmt(tb)}</td><td>0.00</td><td>${fmt(tn)}</td>`;
+}
+
+// ── Bonus ────────────────────────────────────────────────
+async function loadBonus(){
+  const salary=await api('/salary');
+  let rows=[];let totB=0;
+  salary.forEach(s=>{
+    Object.entries(s.daily).sort().forEach(([date,n])=>{
+      const b=calcBonus(n); totB+=b;
+      const l25=Math.max(0,Math.min(n,5)-1),l6=n>=6?1:0,l7=n>=7?1:0;
+      rows.push(`<tr>
+        <td><span class="badge bg-n">${s.vehicle.plate}</span></td>
+        <td>${date}</td><td class="n">${n}</td>
+        <td style="color:var(--muted)">0</td>
+        <td class="n">${l25}×2=${l25*2}</td>
+        <td class="n">${l6}×4=${l6*4}</td>
+        <td class="n">${l7}×5=${l7*5}</td>
+        <td class="n ${b>0?'pos':''}">${b} ر.ع</td>
+      </tr>`);
+    });
+  });
+  document.getElementById('bonusBody').innerHTML=rows.join('')||'<tr><td colspan="8" class="empty">لا توجد بيانات</td></tr>';
+  document.getElementById('bonusFoot').innerHTML=`<td colspan="7">إجمالي البونس</td><td>${totB} ر.ع</td>`;
+}
+
+// ── Init ─────────────────────────────────────────────────
+const today=new Date().toISOString().slice(0,10);
+['f_date','d_date'].forEach(id=>{const el=document.getElementById(id);if(el)el.value=today});
+loadDashboard();
+</script>
+</body>
+</html>
